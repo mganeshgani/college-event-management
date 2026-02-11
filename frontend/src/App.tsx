@@ -13,6 +13,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import FacultyDashboard from './pages/FacultyDashboard';
 import MyActivitiesPage from './pages/MyActivitiesPage';
 import NotFoundPage from './pages/NotFoundPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
 
 // Layout
 import Layout from './components/Layout/Layout';
@@ -70,6 +71,7 @@ function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="activities" element={<ActivitiesPage />} />
           <Route path="activities/:id" element={<ActivityDetailPage />} />
+          <Route path="unauthorized" element={<UnauthorizedPage />} />
 
           {/* Protected Student Routes */}
           <Route
