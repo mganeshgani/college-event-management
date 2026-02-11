@@ -94,7 +94,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -109,7 +109,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 // Root route
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     message: 'Event Management API',
     version: '1.0.0',

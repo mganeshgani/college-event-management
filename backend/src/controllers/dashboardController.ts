@@ -133,7 +133,7 @@ export const getStudentDashboard = async (
  * Admin Dashboard - Get system-wide statistics
  */
 export const getAdminDashboard = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {

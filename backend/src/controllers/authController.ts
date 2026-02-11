@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { body } from 'express-validator';
-import { User, IUserDocument } from '../models/User';
+import { User } from '../models/User';
 import { config } from '../config';
 import { JWTPayload } from '../types';
 
@@ -46,18 +46,20 @@ export const loginValidation = [
  * Generate JWT access token
  */
 const generateAccessToken = (payload: JWTPayload): string => {
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
-  });
+  const options: SignOptions = {
+    expiresIn: config.jwt.expiresIn as any,
+  };
+  return jwt.sign(payload, config.jwt.secret, options);
 };
 
 /**
  * Generate JWT refresh token
  */
 const generateRefreshToken = (payload: JWTPayload): string => {
-  return jwt.sign(payload, config.jwt.refreshSecret, {
-    expiresIn: config.jwt.refreshExpiresIn,
-  });
+  const options: SignOptions = {
+    expiresIn: config.jwt.refreshExpiresIn as any,
+  };
+  return jwt.sign(payload, config.jwt.refreshSecret, options);
 };
 
 /**

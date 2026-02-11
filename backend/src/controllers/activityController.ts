@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { body, query } from 'express-validator';
 import mongoose from 'mongoose';
-import { Activity, IActivityDocument } from '../models/Activity';
+import { Activity } from '../models/Activity';
 import { Participation } from '../models/Participation';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
