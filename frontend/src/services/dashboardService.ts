@@ -46,7 +46,7 @@ export const dashboardService = {
 
   // Get user's enrolled activities
   getMyActivities: async (): Promise<UserActivity[]> => {
-    const response = await api.get('/dashboard/my-activities');
+    const response = await api.get('/activities/my/enrollments');
     return response.data;
   },
 

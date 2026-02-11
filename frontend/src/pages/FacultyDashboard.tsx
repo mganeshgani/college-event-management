@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tantml:react-query';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   PlusCircleIcon,
@@ -26,25 +26,25 @@ export default function FacultyDashboard() {
   const statCards = [
     {
       title: 'Total Activities',
-      value: stats?.totalActivities || 0,
+      value: (stats?.stats?.published || 0) + (stats?.stats?.draft || 0) + (stats?.stats?.completed || 0),
       icon: CalendarDaysIcon,
       color: 'from-primary-500 to-secondary-500',
     },
     {
       title: 'Published',
-      value: stats?.publishedActivities || 0,
+      value: stats?.stats?.published || 0,
       icon: CheckCircleIcon,
       color: 'from-green-500 to-emerald-500',
     },
     {
       title: 'Total Participants',
-      value: stats?.totalParticipants || 0,
+      value: stats?.stats?.totalEnrollments || 0,
       icon: UserGroupIcon,
       color: 'from-blue-500 to-cyan-500',
     },
     {
       title: 'Total Enrollments',
-      value: stats?.totalEnrollments || 0,
+      value: stats?.stats?.totalEnrollments || 0,
       icon: DocumentChartBarIcon,
       color: 'from-pink-500 to-rose-500',
     },
@@ -159,7 +159,7 @@ export default function FacultyDashboard() {
           </Link>
         </div>
 
-        {myActivities && myActivities.data.length > 0 ? (
+        {myActivities?.data && myActivities.data.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {myActivities.data.map((activity) => (
               <ActivityCard key={activity._id} activity={activity} />

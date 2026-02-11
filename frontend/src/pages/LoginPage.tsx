@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -8,34 +8,43 @@ import { useAuthStore } from '../store/authStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, isLoading, isAuthenticated, user } = useAuthStore();
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'faculty' || user.role === 'admin') {
+        navigate('/faculty/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setIsLoading(true);
 
     try {
-      const response = await authService.login(formData);
-      login(response.user, response.accessToken, response.refreshToken);
+      await login(formData.email, formData.password);
+      
+      // Get the updated user from store after login
+      const { user } = useAuthStore.getState();
       
       // Redirect based on role
-      if (response.user.role === 'faculty') {
+      if (user?.role === 'faculty' || user?.role === 'admin') {
         navigate('/faculty/dashboard');
       } else {
-        navigate('/student/dashboard');
+        navigate('/dashboard');
       }
     } catch (error: any) {
       setErrors({ general: handleApiError(error) });
-    } finally {
-      setIsLoading(false);
     }
   };
 

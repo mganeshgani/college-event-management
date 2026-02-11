@@ -55,49 +55,53 @@ async function seed() {
 
     logger.info('Created faculty users');
 
-    // Create student users
-    const students = await User.insertMany([
-      {
-        email: 'student1@college.edu',
-        password: 'Student@123',
-        name: 'Arjun Verma',
-        role: 'student',
-        department: 'Computer Science',
-        rollNumber: 'CS2021001',
-      },
-      {
-        email: 'student2@college.edu',
-        password: 'Student@123',
-        name: 'Priya Singh',
-        role: 'student',
-        department: 'Computer Science',
-        rollNumber: 'CS2021002',
-      },
-      {
-        email: 'student3@college.edu',
-        password: 'Student@123',
-        name: 'Rahul Mehta',
-        role: 'student',
-        department: 'Electronics',
-        rollNumber: 'EC2021001',
-      },
-      {
-        email: 'student4@college.edu',
-        password: 'Student@123',
-        name: 'Sneha Desai',
-        role: 'student',
-        department: 'Mechanical',
-        rollNumber: 'ME2021001',
-      },
-      {
-        email: 'student5@college.edu',
-        password: 'Student@123',
-        name: 'Vikram Rao',
-        role: 'student',
-        department: 'Computer Science',
-        rollNumber: 'CS2021003',
-      },
-    ]);
+    // Create student users (one by one to trigger password hashing)
+    const student1 = await User.create({
+      email: 'student1@college.edu',
+      password: 'Student@123',
+      name: 'Arjun Verma',
+      role: 'student',
+      department: 'Computer Science',
+      rollNumber: 'CS2021001',
+    });
+
+    const student2 = await User.create({
+      email: 'student2@college.edu',
+      password: 'Student@123',
+      name: 'Priya Singh',
+      role: 'student',
+      department: 'Computer Science',
+      rollNumber: 'CS2021002',
+    });
+
+    const student3 = await User.create({
+      email: 'student3@college.edu',
+      password: 'Student@123',
+      name: 'Rahul Mehta',
+      role: 'student',
+      department: 'Electronics',
+      rollNumber: 'EC2021001',
+    });
+
+    const student4 = await User.create({
+      email: 'student4@college.edu',
+      password: 'Student@123',
+      name: 'Sneha Desai',
+      role: 'student',
+      department: 'Mechanical',
+      rollNumber: 'ME2021001',
+    });
+
+    const student5 = await User.create({
+      email: 'student5@college.edu',
+      password: 'Student@123',
+      name: 'Vikram Rao',
+      role: 'student',
+      department: 'Computer Science',
+      rollNumber: 'CS2021003',
+    });
+
+    const students = [student1, student2, student3, student4, student5];
 
     logger.info('Created student users');
 

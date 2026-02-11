@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -14,7 +14,7 @@ import { useAuthStore } from '../store/authStore';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, isAuthenticated, user } = useAuthStore();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -27,6 +27,17 @@ export default function RegisterPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'faculty' || user.role === 'admin') {
+        navigate('/faculty/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

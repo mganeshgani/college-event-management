@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tantml:react-query';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   AcademicCapIcon,
@@ -30,25 +30,25 @@ export default function StudentDashboard() {
   const statCards = [
     {
       title: 'Enrolled Activities',
-      value: stats?.enrolledActivities || 0,
+      value: stats?.stats?.enrolled || 0,
       icon: AcademicCapIcon,
       color: 'from-primary-500 to-secondary-500',
     },
     {
       title: 'Upcoming Events',
-      value: stats?.upcomingActivities || 0,
+      value: stats?.upcomingEnrollments?.length || 0,
       icon: CalendarDaysIcon,
       color: 'from-blue-500 to-cyan-500',
     },
     {
       title: 'Completed',
-      value: stats?.completedActivities || 0,
+      value: stats?.stats?.completed || 0,
       icon: CheckCircleIcon,
       color: 'from-green-500 to-emerald-500',
     },
     {
       title: 'Available',
-      value: stats?.availableActivities || 0,
+      value: stats?.recommendedActivities?.length || 0,
       icon: SparklesIcon,
       color: 'from-pink-500 to-rose-500',
     },
@@ -166,7 +166,7 @@ export default function StudentDashboard() {
           </Link>
         </div>
 
-        {activities && activities.data.length > 0 ? (
+        {activities?.data && activities.data.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activities.data.map((activity) => (
               <ActivityCard key={activity._id} activity={activity} />

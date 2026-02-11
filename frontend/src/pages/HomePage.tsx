@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
 import { 
   CalendarIcon, 
   UserGroupIcon, 
@@ -8,6 +9,21 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function HomePage() {
+  const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      if (user?.role === 'student') {
+        navigate('/dashboard');
+      } else if (user?.role === 'faculty' || user?.role === 'admin') {
+        navigate('/faculty/dashboard');
+      }
+    } else {
+      navigate('/register');
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -42,15 +58,14 @@ export default function HomePage() {
                 </motion.button>
               </Link>
 
-              <Link to="/register">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="btn-outline text-lg px-8 py-4"
-                >
-                  Get Started
-                </motion.button>
-              </Link>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleGetStarted}
+                className="btn-outline text-lg px-8 py-4"
+              >
+                {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
+              </motion.button>
             </div>
           </motion.div>
 

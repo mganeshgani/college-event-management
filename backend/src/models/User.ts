@@ -67,8 +67,7 @@ const userSchema = new Schema<IUserDocument>(
   }
 );
 
-// Index for efficient queries
-userSchema.index({ email: 1 });
+// Index for efficient queries (email already has unique index from schema)
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
 
