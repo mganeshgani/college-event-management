@@ -30,25 +30,25 @@ export default function StudentDashboard() {
   const statCards = [
     {
       title: 'Enrolled Activities',
-      value: stats?.stats?.enrolled || 0,
+      value: stats?.enrolledActivities || 0,
       icon: AcademicCapIcon,
       color: 'from-primary-500 to-secondary-500',
     },
     {
       title: 'Upcoming Events',
-      value: stats?.upcomingEnrollments?.length || 0,
+      value: stats?.upcomingActivities || 0,
       icon: CalendarDaysIcon,
       color: 'from-blue-500 to-cyan-500',
     },
     {
       title: 'Completed',
-      value: stats?.stats?.completed || 0,
+      value: stats?.completedActivities || 0,
       icon: CheckCircleIcon,
       color: 'from-green-500 to-emerald-500',
     },
     {
       title: 'Available',
-      value: stats?.recommendedActivities?.length || 0,
+      value: stats?.availableActivities || 0,
       icon: SparklesIcon,
       color: 'from-pink-500 to-rose-500',
     },

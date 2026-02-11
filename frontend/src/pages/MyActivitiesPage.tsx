@@ -189,9 +189,9 @@ export default function MyActivitiesPage() {
 
           <Card glass className="text-center">
             <p className="text-3xl font-bold text-blue-600">
-              {activities.filter((a) => a.status === 'attended').length}
+              {activities.filter((a) => a.status === 'cancelled').length}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Attended</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Cancelled</p>
           </Card>
 
           <Card glass className="text-center">

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Button, Input, Card } from '../components/Common';
-import { authService, handleApiError } from '../services';
+import { handleApiError } from '../services';
 import { useAuthStore } from '../store/authStore';
 
 export default function LoginPage() {
