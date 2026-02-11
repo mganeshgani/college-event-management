@@ -122,7 +122,7 @@ export const useAuthStore = create<AuthState>()(
         });
 
         delete axios.defaults.headers.common['Authorization'];
-        toast.success('Logged out successfully');
+        toast.success('Logged out successfully', { duration: 2000 });
       },
 
       refreshAccessToken: async () => {

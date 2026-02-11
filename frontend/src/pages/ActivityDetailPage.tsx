@@ -177,11 +177,11 @@ export default function ActivityDetailPage() {
             <h3 className="text-lg font-semibold mb-3">Organized By</h3>
             <div className="flex items-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-xl mr-4">
-                {activity.organizer.name.charAt(0)}
+                {activity.createdBy?.name?.charAt(0) || '?'}
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">{activity.organizer.name}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{activity.organizer.email}</p>
+                <p className="font-medium text-gray-900 dark:text-white">{activity.createdBy?.name || 'Unknown'}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{activity.createdBy?.email || ''}</p>
               </div>
             </div>
           </Card>
@@ -299,7 +299,7 @@ export default function ActivityDetailPage() {
 
           <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/20">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              📅 {formatDate(activity.date)} at {formatTime(activity.date)}
+              📅 {formatDate(activity.startDate)} at {formatTime(activity.startDate)}
               <br />
               📍 {activity.location}
             </p>

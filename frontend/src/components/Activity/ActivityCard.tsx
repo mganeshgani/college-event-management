@@ -152,7 +152,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
           {/* Organizer */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-500">
-              Organized by <span className="font-medium text-gray-700 dark:text-gray-300">{activity.organizer.name}</span>
+              Organized by <span className="font-medium text-gray-700 dark:text-gray-300">{activity.createdBy?.name || 'Unknown'}</span>
             </p>
           </div>
         </div>

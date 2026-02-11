@@ -150,10 +150,16 @@ export const getActivities = async (
       endDate,
       page = 1,
       limit = 20,
+      myActivities,
     } = req.query;
 
     // Build query
     const query: any = {};
+
+    // Filter by creator if myActivities is true (for faculty)
+    if (myActivities === 'true' && req.user) {
+      query.createdBy = req.user.userId;
+    }
 
     // Only show published activities to students
     if (req.user!.role === 'student') {
@@ -191,7 +197,7 @@ export const getActivities = async (
     ]);
 
     res.json({
-      activities,
+      data: activities,
       pagination: {
         page: Number(page),
         limit: Number(limit),

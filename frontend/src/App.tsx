@@ -12,6 +12,9 @@ import ActivityDetailPage from './pages/ActivityDetailPage';
 import StudentDashboard from './pages/StudentDashboard';
 import FacultyDashboard from './pages/FacultyDashboard';
 import MyActivitiesPage from './pages/MyActivitiesPage';
+import FacultyActivitiesPage from './pages/FacultyActivitiesPage';
+import CreateActivityPage from './pages/CreateActivityPage';
+import EditActivityPage from './pages/EditActivityPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -97,6 +100,30 @@ function App() {
             element={
               <ProtectedRoute roles={['faculty', 'admin']}>
                 <FacultyDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="faculty/my-activities"
+            element={
+              <ProtectedRoute roles={['faculty', 'admin']}>
+                <FacultyActivitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="create-activity"
+            element={
+              <ProtectedRoute roles={['faculty', 'admin']}>
+                <CreateActivityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="edit-activity/:id"
+            element={
+              <ProtectedRoute roles={['faculty', 'admin']}>
+                <EditActivityPage />
               </ProtectedRoute>
             }
           />

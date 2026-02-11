@@ -18,6 +18,9 @@ import dashboardRoutes from './routes/dashboardRoutes';
 
 const app: Application = express();
 
+// Disable ETags to prevent 304 caching issues
+app.set('etag', false);
+
 // Trust proxy (for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);
 

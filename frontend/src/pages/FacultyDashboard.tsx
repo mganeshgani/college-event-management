@@ -135,7 +135,7 @@ export default function FacultyDashboard() {
           </Card>
         </Link>
 
-        <Link to="/my-activities">
+        <Link to="/faculty/my-activities">
           <Card hover className="text-center cursor-pointer">
             <DocumentChartBarIcon className="w-12 h-12 mx-auto mb-3 text-green-500" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">

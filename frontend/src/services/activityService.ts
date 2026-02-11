@@ -31,6 +31,7 @@ export interface ActivityFilters {
   endDate?: string;
   page?: number;
   limit?: number;
+  myActivities?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -43,7 +44,26 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface CreateActivityData {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  capacity: number;
+  department: string;
+  category: string;
+  posterImage?: string;
+  status: 'draft' | 'published' | 'cancelled' | 'completed';
+}
+
 export const activityService = {
+  // Create new activity (faculty only)
+  createActivity: async (data: CreateActivityData): Promise<{ message: string; activity: Activity }> => {
+    const response = await api.post('/activities', data);
+    return response.data;
+  },
+
   // Get all activities with filters
   getActivities: async (filters?: ActivityFilters): Promise<PaginatedResponse<Activity>> => {
     const params = new URLSearchParams();
@@ -62,10 +82,10 @@ export const activityService = {
     return response.data;
   },
 
-  // Create new activity (faculty only)
-  createActivity: async (data: Partial<Activity>): Promise<Activity> => {
-    const response = await api.post('/activities', data);
-    return response.data;
+  // Get single activity by ID (simplified)
+  getActivityById: async (id: string): Promise<Activity> => {
+    const response = await api.get(`/activities/${id}`);
+    return response.data.activity;
   },
 
   // Update activity (faculty only)
