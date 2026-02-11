@@ -19,7 +19,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
           hover && 'cursor-pointer card-hover',
           className
         )}
-        {...props}
+        {...(props as any)}
       >
         {children}
       </motion.div>

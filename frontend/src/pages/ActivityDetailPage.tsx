@@ -123,14 +123,14 @@ export default function ActivityDetailPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Hero Image */}
-          {activity.imageUrl && (
+          {activity.posterImage && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="relative h-96 rounded-2xl overflow-hidden"
             >
               <img
-                src={activity.imageUrl}
+                src={activity.posterImage}
                 alt={activity.title}
                 className="w-full h-full object-cover"
               />

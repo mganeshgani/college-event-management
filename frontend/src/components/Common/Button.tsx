@@ -51,7 +51,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || isLoading}
-        {...props}
+        {...(props as any)}
       >
         {isLoading ? (
           <svg
