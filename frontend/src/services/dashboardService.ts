@@ -13,15 +13,19 @@ export interface DashboardStats {
 
 export interface UserActivity {
   _id: string;
-  activity: {
+  activityId: {
     _id: string;
     title: string;
-    category: string;
-    date: string;
+    description: string;
+    startDate: string;
+    endDate: string;
     location: string;
-    imageUrl?: string;
+    category: string;
+    posterImage?: string;
+    status: string;
   };
-  status: 'enrolled' | 'waitlisted' | 'attended' | 'cancelled';
+  userId: string;
+  status: 'enrolled' | 'waitlisted' | 'cancelled';
   enrolledAt: string;
 }
 
@@ -47,7 +51,7 @@ export const dashboardService = {
   // Get user's enrolled activities
   getMyActivities: async (): Promise<UserActivity[]> => {
     const response = await api.get('/activities/my/enrollments');
-    return response.data;
+    return response.data.enrollments || [];
   },
 
   // Get recommended activities for student

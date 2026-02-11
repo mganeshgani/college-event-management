@@ -100,15 +100,15 @@ export default function MyActivitiesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link to={`/activities/${item.activity._id}`}>
+              <Link to={`/activities/${item.activityId._id}`}>
                 <Card hover className="!p-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-6">
                     {/* Activity Image */}
-                    {item.activity.imageUrl && (
+                    {item.activityId.posterImage && (
                       <div className="w-full md:w-48 h-32 rounded-xl overflow-hidden flex-shrink-0">
                         <img
-                          src={item.activity.imageUrl}
-                          alt={item.activity.title}
+                          src={item.activityId.posterImage}
+                          alt={item.activityId.title}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -119,10 +119,10 @@ export default function MyActivitiesPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                            {item.activity.title}
+                            {item.activityId.title}
                           </h3>
                           <div className="flex flex-wrap gap-2 mb-3">
-                            <Badge variant="primary">{item.activity.category}</Badge>
+                            <Badge variant="primary">{item.activityId.category}</Badge>
                             <Badge variant={getStatusVariant(item.status)}>
                               {item.status}
                             </Badge>
@@ -133,17 +133,17 @@ export default function MyActivitiesPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <CalendarIcon className="w-4 h-4 mr-2 text-primary-500" />
-                          <span>{formatDate(item.activity.date)}</span>
+                          <span>{formatDate(item.activityId.startDate)}</span>
                         </div>
 
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <ClockIcon className="w-4 h-4 mr-2 text-primary-500" />
-                          <span>{formatTime(item.activity.date)}</span>
+                          <span>{formatTime(item.activityId.startDate)}</span>
                         </div>
 
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <MapPinIcon className="w-4 h-4 mr-2 text-primary-500" />
-                          <span className="truncate">{item.activity.location}</span>
+                          <span className="truncate">{item.activityId.location}</span>
                         </div>
 
                         <div className="text-gray-600 dark:text-gray-400">
