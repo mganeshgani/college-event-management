@@ -39,7 +39,8 @@ export default function ActivityDetailPage() {
       setEnrollSuccess(true);
       setShowEnrollModal(false);
       queryClient.invalidateQueries({ queryKey: ['activity', id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'student'] });
+      queryClient.invalidateQueries({ queryKey: ['myActivities'] });
     },
     onError: (error) => {
       setEnrollError(handleApiError(error));

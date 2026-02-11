@@ -44,8 +44,7 @@ const CreateActivityPage = () => {
     mutationFn: (data: CreateActivityForm) => activityService.createActivity(data),
     onSuccess: () => {
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['facultyStats'] });
-      queryClient.invalidateQueries({ queryKey: ['myActivities'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'faculty'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       toast.success('Activity created successfully!');
       navigate('/faculty/dashboard');

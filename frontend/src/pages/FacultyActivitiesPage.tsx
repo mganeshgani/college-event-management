@@ -26,7 +26,8 @@ export default function FacultyActivitiesPage() {
     onSuccess: () => {
       toast.success('Activity deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['myActivities'] });
-      queryClient.invalidateQueries({ queryKey: ['facultyStats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'faculty'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
       setDeleteModal({ isOpen: false, activityId: null, activityTitle: '' });
     },
     onError: (error: any) => {

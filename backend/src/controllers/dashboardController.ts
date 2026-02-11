@@ -33,6 +33,16 @@ export const getFacultyDashboard = async (
 
     const [publishedCount, draftCount, completedCount, totalEnrollments] = stats;
 
+    // Get total activities count
+    const totalActivities = activities.length;
+
+    // Get unique participants count
+    const participantIds = await Participation.distinct('userId', {
+      activityId: { $in: activities.map((a) => a._id) },
+      status: 'enrolled',
+    });
+    const totalParticipants = participantIds.length;
+
     // Get recent enrollments
     const recentEnrollments = await Participation.find({
       activityId: { $in: activities.map((a) => a._id) },
@@ -53,6 +63,10 @@ export const getFacultyDashboard = async (
       .limit(5);
 
     res.json({
+      totalActivities,
+      publishedActivities: publishedCount,
+      totalEnrollments,
+      totalParticipants,
       stats: {
         published: publishedCount,
         draft: draftCount,
@@ -85,16 +99,14 @@ export const getStudentDashboard = async (
       .sort({ enrolledAt: -1 });
 
     // Get statistics
-    const stats = {
-      enrolled: enrollments.filter((e) => e.status === 'enrolled').length,
-      waitlisted: enrollments.filter((e) => e.status === 'waitlisted').length,
-      cancelled: enrollments.filter((e) => e.status === 'cancelled').length,
-      completed: enrollments.filter(
-        (e) =>
-          e.status === 'enrolled' &&
-          (e.activityId as any).status === 'completed'
-      ).length,
-    };
+    const enrolledCount = enrollments.filter((e) => e.status === 'enrolled').length;
+    const waitlistedCount = enrollments.filter((e) => e.status === 'waitlisted').length;
+    const cancelledCount = enrollments.filter((e) => e.status === 'cancelled').length;
+    const completedCount = enrollments.filter(
+      (e) =>
+        e.status === 'enrolled' &&
+        (e.activityId as any).status === 'completed'
+    ).length;
 
     // Get upcoming activities
     const upcomingEnrollments = enrollments.filter((e) => {
@@ -104,6 +116,14 @@ export const getStudentDashboard = async (
         activity.status === 'published' &&
         new Date(activity.startDate) >= new Date()
       );
+    });
+    const upcomingCount = upcomingEnrollments.length;
+
+    // Get available activities count
+    const availableCount = await Activity.countDocuments({
+      status: 'published',
+      startDate: { $gte: new Date() },
+      availableSlots: { $gt: 0 },
     });
 
     // Get recommended activities (based on department and past enrollments)
@@ -118,7 +138,16 @@ export const getStudentDashboard = async (
       .sort({ startDate: 1 });
 
     res.json({
-      stats,
+      enrolledActivities: enrolledCount,
+      upcomingActivities: upcomingCount,
+      completedActivities: completedCount,
+      availableActivities: availableCount,
+      stats: {
+        enrolled: enrolledCount,
+        waitlisted: waitlistedCount,
+        cancelled: cancelledCount,
+        completed: completedCount,
+      },
       enrollments,
       upcomingEnrollments,
       recommendedActivities,

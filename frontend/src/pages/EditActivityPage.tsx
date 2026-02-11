@@ -57,6 +57,7 @@ export default function EditActivityPage() {
       queryClient.invalidateQueries({ queryKey: ['myActivities'] });
       queryClient.invalidateQueries({ queryKey: ['activity', id] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'faculty'] });
       navigate('/faculty/my-activities');
     },
     onError: (error: any) => {
