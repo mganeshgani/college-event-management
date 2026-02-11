@@ -24,11 +24,14 @@ export default function ActivityDetailPage() {
   const [enrollError, setEnrollError] = useState('');
   const [enrollSuccess, setEnrollSuccess] = useState(false);
 
-  const { data: activity, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['activity', id],
     queryFn: () => activityService.getActivity(id!),
     enabled: !!id,
   });
+
+  const activity = data?.activity;
+  const isEnrolled = data?.isEnrolled || false;
 
   const enrollMutation = useMutation({
     mutationFn: () => activityService.enrollActivity(id!),
@@ -85,8 +88,11 @@ export default function ActivityDetailPage() {
     });
   };
 
-  const slotsPercentage = (activity.availableSlots / activity.maxParticipants) * 100;
-  const canEnroll = user?.role === 'student' && activity.status === 'published' && activity.availableSlots > 0;
+  const slotsPercentage = (activity.availableSlots / activity.capacity) * 100;
+  const canEnroll = user?.role === 'student' && 
+                    activity.status === 'published' && 
+                    activity.availableSlots > 0 && 
+                    !isEnrolled;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -191,7 +197,7 @@ export default function ActivityDetailPage() {
                 <CalendarIcon className="w-5 h-5 text-primary-500 mr-3 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
-                  <p className="font-medium">{formatDate(activity.date)}</p>
+                  <p className="font-medium">{formatDate(activity.startDate)}</p>
                 </div>
               </div>
 
@@ -199,7 +205,7 @@ export default function ActivityDetailPage() {
                 <ClockIcon className="w-5 h-5 text-primary-500 mr-3 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Time</p>
-                  <p className="font-medium">{formatTime(activity.date)}</p>
+                  <p className="font-medium">{formatTime(activity.startDate)}</p>
                 </div>
               </div>
 
@@ -216,7 +222,7 @@ export default function ActivityDetailPage() {
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Capacity</p>
                   <p className="font-medium">
-                    {activity.availableSlots} / {activity.maxParticipants} spots available
+                    {activity.availableSlots} / {activity.capacity} spots available
                   </p>
                 </div>
               </div>
@@ -243,7 +249,14 @@ export default function ActivityDetailPage() {
             </div>
 
             {/* Enroll Button */}
-            {canEnroll ? (
+            {isEnrolled ? (
+              <div className="mt-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <div className="flex items-center justify-center text-green-600 dark:text-green-400">
+                  <CheckCircleIcon className="w-5 h-5 mr-2" />
+                  <span className="font-medium">You're enrolled in this activity</span>
+                </div>
+              </div>
+            ) : canEnroll ? (
               <Button
                 variant="primary"
                 size="lg"

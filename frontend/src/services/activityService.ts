@@ -5,18 +5,19 @@ export interface Activity {
   title: string;
   description: string;
   category: string;
-  date: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
   location: string;
-  maxParticipants: number;
+  capacity: number;
   availableSlots: number;
-  organizer: {
+  department: string;
+  posterImage?: string;
+  createdBy: {
     _id: string;
     name: string;
     email: string;
+    department?: string;
   };
-  tags: string[];
-  imageUrl?: string;
   status: 'draft' | 'published' | 'cancelled' | 'completed';
   createdAt: string;
   updatedAt: string;
@@ -56,7 +57,7 @@ export const activityService = {
   },
 
   // Get single activity by ID
-  getActivity: async (id: string): Promise<Activity> => {
+  getActivity: async (id: string): Promise<{ activity: Activity; isEnrolled: boolean }> => {
     const response = await api.get(`/activities/${id}`);
     return response.data;
   },

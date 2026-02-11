@@ -53,17 +53,17 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
     });
   };
 
-  const slotsPercentage = (activity.availableSlots / activity.maxParticipants) * 100;
+  const slotsPercentage = (activity.availableSlots / activity.capacity) * 100;
   const isAlmostFull = slotsPercentage < 20;
 
   return (
     <Link to={`/activities/${activity._id}`}>
       <Card hover glass className="h-full overflow-hidden">
         {/* Image */}
-        {activity.imageUrl && (
+        {activity.posterImage && (
           <div className="relative -m-6 mb-4 h-48 overflow-hidden">
             <img
-              src={activity.imageUrl}
+              src={activity.posterImage}
               alt={activity.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
             />
@@ -94,12 +94,12 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
           <div className="space-y-2 text-sm">
             <div className="flex items-center text-gray-600 dark:text-gray-400">
               <CalendarIcon className="w-4 h-4 mr-2 text-primary-500" />
-              <span>{formatDate(activity.date)}</span>
+              <span>{formatDate(activity.startDate)}</span>
             </div>
 
             <div className="flex items-center text-gray-600 dark:text-gray-400">
               <ClockIcon className="w-4 h-4 mr-2 text-primary-500" />
-              <span>{formatTime(activity.date)}</span>
+              <span>{formatTime(activity.startDate)}</span>
             </div>
 
             <div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -110,7 +110,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
             <div className="flex items-center text-gray-600 dark:text-gray-400">
               <UserGroupIcon className="w-4 h-4 mr-2 text-primary-500" />
               <span>
-                {activity.availableSlots} / {activity.maxParticipants} slots available
+                {activity.availableSlots} / {activity.capacity} slots available
               </span>
             </div>
           </div>
