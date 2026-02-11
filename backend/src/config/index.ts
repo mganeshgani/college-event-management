@@ -17,12 +17,6 @@ export const config = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
-  sendgrid: {
-    apiKey: process.env.SENDGRID_API_KEY || '',
-    fromEmail: process.env.SENDGRID_FROM_EMAIL || 'noreply@eventmanagement.edu',
-    fromName: process.env.SENDGRID_FROM_NAME || 'Event Management System',
-  },
-
   frontend: {
     url: process.env.FRONTEND_URL || 'http://localhost:5173',
   },
@@ -52,7 +46,6 @@ if (config.env === 'production') {
     'MONGODB_URI',
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
-    'SENDGRID_API_KEY',
   ];
 
   for (const key of required) {

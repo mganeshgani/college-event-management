@@ -1,8 +1,4 @@
-import sgMail from '@sendgrid/mail';
-import { config } from '../config';
 import { logger } from './logger';
-
-sgMail.setApiKey(config.sendgrid.apiKey);
 
 interface EmailOptions {
   to: string;
@@ -12,40 +8,12 @@ interface EmailOptions {
 }
 
 /**
- * Send email using SendGrid
+ * Log email instead of sending (SendGrid removed for final year project)
  */
 export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
-  try {
-    // Skip sending in test environment
-    if (config.env === 'test') {
-      logger.info(`[TEST] Email would be sent to ${options.to}: ${options.subject}`);
-      return true;
-    }
-
-    // Skip if SendGrid is not configured
-    if (!config.sendgrid.apiKey) {
-      logger.warn('SendGrid API key not configured, skipping email send');
-      return false;
-    }
-
-    const msg = {
-      to: options.to,
-      from: {
-        email: config.sendgrid.fromEmail,
-        name: config.sendgrid.fromName,
-      },
-      subject: options.subject,
-      text: options.text || options.html.replace(/<[^>]*>/g, ''),
-      html: options.html,
-    };
-
-    await sgMail.send(msg);
-    logger.info(`Email sent successfully to ${options.to}`);
-    return true;
-  } catch (error) {
-    logger.error('Failed to send email:', error);
-    return false;
-  }
+  logger.info(`[EMAIL] To: ${options.to} | Subject: ${options.subject}`);
+  logger.info(`[EMAIL] Content: ${options.text || options.html.replace(/<[^>]*>/g, '').substring(0, 100)}...`);
+  return true;
 };
 
 /**
