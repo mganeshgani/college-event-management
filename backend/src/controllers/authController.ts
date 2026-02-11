@@ -76,9 +76,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Clean rollNumber: convert empty string to undefined for sparse unique index
+    const cleanRollNumber = rollNumber && rollNumber.trim() !== '' ? rollNumber.trim() : undefined;
+
     // Check if roll number is already used (if provided)
-    if (rollNumber) {
-      const existingRollNumber = await User.findOne({ rollNumber });
+    if (cleanRollNumber) {
+      const existingRollNumber = await User.findOne({ rollNumber: cleanRollNumber });
       if (existingRollNumber) {
         res.status(409).json({ error: 'Roll number already registered' });
         return;
@@ -92,7 +95,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       name,
       role,
       department,
-      rollNumber,
+      rollNumber: cleanRollNumber,
     });
 
     // Generate tokens
