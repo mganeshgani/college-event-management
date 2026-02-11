@@ -155,23 +155,6 @@ export default function ActivityDetailPage() {
             </p>
           </Card>
 
-          {/* Tags */}
-          {activity.tags && activity.tags.length > 0 && (
-            <Card>
-              <h3 className="text-lg font-semibold mb-3">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {activity.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          )}
-
           {/* Organizer Info */}
           <Card>
             <h3 className="text-lg font-semibold mb-3">Organized By</h3>

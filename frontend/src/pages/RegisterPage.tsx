@@ -71,7 +71,7 @@ export default function RegisterPage() {
     try {
       const { confirmPassword, ...registerData } = formData;
       const response = await authService.register(registerData);
-      login(response.user, response.accessToken);
+      await login(response.user.email, formData.password);
       
       // Redirect based on role
       if (response.user.role === 'faculty') {

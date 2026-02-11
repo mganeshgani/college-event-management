@@ -42,7 +42,7 @@ const CreateActivityPage = () => {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateActivityForm) => activityService.createActivity(data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['facultyStats'] });
       queryClient.invalidateQueries({ queryKey: ['myActivities'] });
