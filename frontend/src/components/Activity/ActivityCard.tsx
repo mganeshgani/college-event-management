@@ -135,19 +135,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
             </div>
           </div>
 
-          {/* Tags */}
-          {activity.tags && activity.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {activity.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+
 
           {/* Organizer */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
