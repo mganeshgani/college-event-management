@@ -77,6 +77,12 @@ export const dashboardService = {
     return response.data.enrollments || [];
   },
 
+  // Get activity analytics (faculty/admin)
+  getActivityAnalytics: async (id: string) => {
+    const response = await api.get(`/dashboard/analytics/${id}`);
+    return response.data;
+  },
+
   // Admin: Get all users with filters
   getAdminUsers: async (filters?: { role?: string; search?: string; page?: number; limit?: number }) => {
     const params = new URLSearchParams();
@@ -98,6 +104,12 @@ export const dashboardService = {
       });
     }
     const response = await api.get(`/dashboard/admin/activities?${params.toString()}`);
+    return response.data;
+  },
+
+  // Admin: Update user role
+  updateUserRole: async (userId: string, role: 'student' | 'faculty' | 'admin') => {
+    const response = await api.patch(`/dashboard/admin/users/${userId}/role`, { role });
     return response.data;
   },
 };

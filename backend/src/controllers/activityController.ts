@@ -5,7 +5,7 @@ import { Activity } from '../models/Activity';
 import { Participation } from '../models/Participation';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
-import { sendEnrollmentConfirmation } from '../utils/email';
+import { sendEnrollmentConfirmation, sendWaitlistNotification } from '../utils/email';
 import { logger } from '../utils/logger';
 
 /**
@@ -97,6 +97,7 @@ export const createActivity = async (
       category,
       posterImage,
       status = 'draft',
+      waitlistEnabled = false,
     } = req.body;
 
     const userId = req.user!.userId;
@@ -121,6 +122,7 @@ export const createActivity = async (
       posterImage,
       createdBy: userId,
       status,
+      waitlistEnabled,
     });
 
     res.status(201).json({
@@ -244,6 +246,8 @@ export const getActivityById = async (
 
     // Check if user is enrolled
     let isEnrolled = false;
+    let enrollmentStatus: string | null = null;
+    let waitlistPosition: number | null = null;
     if (req.user && req.user.role === 'student') {
       const participation = await Participation.findOne({
         activityId: id,
@@ -251,9 +255,19 @@ export const getActivityById = async (
         status: { $in: ['enrolled', 'waitlisted'] },
       });
       isEnrolled = !!participation;
+      if (participation) {
+        enrollmentStatus = participation.status;
+        if (participation.status === 'waitlisted') {
+          waitlistPosition = await Participation.countDocuments({
+            activityId: id,
+            status: 'waitlisted',
+            enrolledAt: { $lt: participation.enrolledAt },
+          }) + 1;
+        }
+      }
     }
 
-    res.json({ activity, isEnrolled });
+    res.json({ activity, isEnrolled, enrollmentStatus, waitlistPosition });
   } catch (error) {
     logger.error('Get activity error:', error);
     res.status(500).json({ error: 'Failed to fetch activity' });
@@ -322,7 +336,7 @@ export const updateActivity = async (
     }
 
     // Update activity - whitelist allowed fields to prevent injection
-    const allowedFields = ['title', 'description', 'startDate', 'endDate', 'location', 'capacity', 'availableSlots', 'department', 'category', 'posterImage', 'status'];
+    const allowedFields = ['title', 'description', 'startDate', 'endDate', 'location', 'capacity', 'availableSlots', 'department', 'category', 'posterImage', 'status', 'waitlistEnabled'];
     const updates: any = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
@@ -452,65 +466,94 @@ export const enrollInActivity = async (
       return;
     }
 
-    // STEP 3: Check available slots and atomically decrement
-    if (activity.availableSlots <= 0) {
+    // STEP 3 + 4: Try to secure a slot atomically
+    let gotSlot = false;
+    if (activity.availableSlots > 0) {
+      const updateResult = await Activity.updateOne(
+        {
+          _id: id,
+          availableSlots: { $gt: 0 },
+        },
+        {
+          $inc: { availableSlots: -1 },
+        }
+      ).session(session);
+      gotSlot = updateResult.modifiedCount > 0;
+    }
+
+    if (gotSlot) {
+      // STEP 5: Create enrolled participation
+      const participation = await Participation.create(
+        [
+          {
+            activityId: id,
+            userId,
+            status: 'enrolled',
+            enrolledAt: new Date(),
+          },
+        ],
+        { session }
+      );
+
+      // STEP 6: Commit transaction
+      await session.commitTransaction();
+
+      // STEP 7: Send confirmation email (async, after transaction)
+      const user = await User.findById(userId);
+      if (user) {
+        sendEnrollmentConfirmation(
+          user.email,
+          user.name,
+          activity.title,
+          activity.startDate,
+          activity.location
+        ).catch((err) => logger.error('Email send failed:', err));
+      }
+
+      res.status(200).json({
+        message: 'Successfully enrolled in activity',
+        participation: participation[0],
+        remainingSlots: activity.availableSlots - 1,
+      });
+    } else if (activity.waitlistEnabled) {
+      // Activity is full but waitlist is enabled — add to waitlist
+      const waitlistPosition = await Participation.countDocuments({
+        activityId: id,
+        status: 'waitlisted',
+      }).session(session) + 1;
+
+      const participation = await Participation.create(
+        [
+          {
+            activityId: id,
+            userId,
+            status: 'waitlisted',
+            enrolledAt: new Date(),
+          },
+        ],
+        { session }
+      );
+
+      await session.commitTransaction();
+
+      // Send waitlist notification (async, after transaction)
+      const user = await User.findById(userId);
+      if (user) {
+        sendWaitlistNotification(user.email, user.name, activity.title)
+          .catch((err) => logger.error('Waitlist email send failed:', err));
+      }
+
+      res.status(200).json({
+        message: 'Activity is full. You have been added to the waitlist.',
+        participation: participation[0],
+        waitlistPosition,
+        status: 'waitlisted',
+      });
+    } else {
+      // Activity is full and no waitlist
       await session.abortTransaction();
       res.status(400).json({ error: 'Activity is full' });
-      return;
     }
-
-    // STEP 4: Atomic update - decrement available slots
-    // This ensures only one enrollment succeeds when multiple requests arrive simultaneously
-    const updateResult = await Activity.updateOne(
-      {
-        _id: id,
-        availableSlots: { $gt: 0 }, // Only update if slots still available
-      },
-      {
-        $inc: { availableSlots: -1 }, // Decrement by 1
-      }
-    ).session(session);
-
-    // If no document was updated, slots were taken by another request
-    if (updateResult.modifiedCount === 0) {
-      await session.abortTransaction();
-      res.status(400).json({ error: 'Activity is full (slots taken)' });
-      return;
-    }
-
-    // STEP 5: Create participation record
-    const participation = await Participation.create(
-      [
-        {
-          activityId: id,
-          userId,
-          status: 'enrolled',
-          enrolledAt: new Date(),
-        },
-      ],
-      { session }
-    );
-
-    // STEP 6: Commit transaction
-    await session.commitTransaction();
-
-    // STEP 7: Send confirmation email (async, after transaction)
-    const user = await User.findById(userId);
-    if (user) {
-      sendEnrollmentConfirmation(
-        user.email,
-        user.name,
-        activity.title,
-        activity.startDate,
-        activity.location
-      ).catch((err) => logger.error('Email send failed:', err));
-    }
-
-    res.status(200).json({
-      message: 'Successfully enrolled in activity',
-      participation: participation[0],
-      remainingSlots: activity.availableSlots - 1,
-    });
   } catch (error: any) {
     if (session.inTransaction()) {
       await session.abortTransaction();
@@ -560,11 +603,11 @@ export const cancelEnrollment = async (
       return;
     }
 
-    // Find participation
+    // Find participation (enrolled or waitlisted)
     const participation = await Participation.findOne({
       activityId: id,
       userId,
-      status: 'enrolled',
+      status: { $in: ['enrolled', 'waitlisted'] },
     }).session(session);
 
     if (!participation) {
@@ -573,21 +616,59 @@ export const cancelEnrollment = async (
       return;
     }
 
+    const wasPreviouslyEnrolled = participation.status === 'enrolled';
+
     // Update participation status
     participation.status = 'cancelled';
     await participation.save({ session });
 
-    // Increment available slots
-    await Activity.updateOne(
-      { _id: id },
-      { $inc: { availableSlots: 1 } }
-    ).session(session);
+    if (wasPreviouslyEnrolled) {
+      // Check for waitlisted participants to auto-promote
+      const nextWaitlisted = await Participation.findOne({
+        activityId: id,
+        status: 'waitlisted',
+      })
+        .sort({ enrolledAt: 1 }) // oldest waitlisted first
+        .session(session);
 
-    await session.commitTransaction();
+      if (nextWaitlisted) {
+        // Promote waitlisted → enrolled (slot freed by cancel is consumed by promotion)
+        nextWaitlisted.status = 'enrolled';
+        await nextWaitlisted.save({ session });
+
+        await session.commitTransaction();
+
+        // Send enrollment confirmation to promoted user (async)
+        const promotedUser = await User.findById(nextWaitlisted.userId);
+        const activity = await Activity.findById(id);
+        if (promotedUser && activity) {
+          sendEnrollmentConfirmation(
+            promotedUser.email,
+            promotedUser.name,
+            activity.title,
+            activity.startDate,
+            activity.location
+          ).catch((err) => logger.error('Promotion email send failed:', err));
+        }
+      } else {
+        // No one to promote — increment available slots
+        await Activity.updateOne(
+          { _id: id },
+          { $inc: { availableSlots: 1 } }
+        ).session(session);
+
+        await session.commitTransaction();
+      }
+    } else {
+      // Was waitlisted — no slot changes needed
+      await session.commitTransaction();
+    }
 
     res.json({ message: 'Enrollment cancelled successfully' });
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     logger.error('Cancel enrollment error:', error);
     res.status(500).json({ error: 'Failed to cancel enrollment' });
   } finally {
@@ -707,5 +788,85 @@ export const getActivityParticipants = async (
   } catch (error) {
     logger.error('Get participants error:', error);
     res.status(500).json({ error: 'Failed to fetch participants' });
+  }
+};
+
+/**
+ * Bulk update activity status (Admin only)
+ */
+export const bulkUpdateActivityStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { activityIds, status } = req.body;
+
+    if (!Array.isArray(activityIds) || activityIds.length === 0) {
+      res.status(400).json({ error: 'activityIds must be a non-empty array' });
+      return;
+    }
+
+    const validStatuses = ['published', 'cancelled', 'completed'];
+    if (!validStatuses.includes(status)) {
+      res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
+      return;
+    }
+
+    const validIds = activityIds.every((id: string) => mongoose.Types.ObjectId.isValid(id));
+    if (!validIds) {
+      res.status(400).json({ error: 'One or more invalid activity IDs' });
+      return;
+    }
+
+    const result = await Activity.updateMany(
+      { _id: { $in: activityIds } },
+      { status }
+    );
+
+    res.json({ modifiedCount: result.modifiedCount });
+  } catch (error) {
+    logger.error('Bulk status update error:', error);
+    res.status(500).json({ error: 'Failed to update activity statuses' });
+  }
+};
+
+/**
+ * Clone an activity (Faculty + Admin)
+ */
+export const cloneActivity = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+
+    const original = await Activity.findById(id);
+    if (!original) {
+      res.status(404).json({ error: 'Activity not found' });
+      return;
+    }
+
+    // Faculty can only clone their own activities
+    if (userRole === 'faculty' && original.createdBy.toString() !== userId) {
+      res.status(403).json({ error: 'You can only clone your own activities' });
+      return;
+    }
+
+    const cloned = await Activity.create({
+      title: `Copy of ${original.title}`,
+      description: original.description,
+      location: original.location,
+      capacity: original.capacity,
+      availableSlots: original.capacity,
+      department: original.department,
+      category: original.category,
+      posterImage: original.posterImage,
+      waitlistEnabled: original.waitlistEnabled,
+      status: 'draft',
+      createdBy: userId,
+      startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      endDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+    });
+
+    res.status(201).json(cloned);
+  } catch (error) {
+    logger.error('Clone activity error:', error);
+    res.status(500).json({ error: 'Failed to clone activity' });
   }
 };

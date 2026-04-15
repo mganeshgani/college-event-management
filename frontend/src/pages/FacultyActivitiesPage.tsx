@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { PlusCircleIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Link, useNavigate } from 'react-router-dom';
+import { PlusCircleIcon, PencilSquareIcon, TrashIcon, ChartBarIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Skeleton } from '../components/Common';
 import Modal from '../components/Common/Modal';
 import { activityService } from '../services';
@@ -10,7 +10,13 @@ import toast from 'react-hot-toast';
 
 export default function FacultyActivitiesPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; activityId: string | null; activityTitle: string }>({
+    isOpen: false,
+    activityId: null,
+    activityTitle: '',
+  });
+  const [cloneModal, setCloneModal] = useState<{ isOpen: boolean; activityId: string | null; activityTitle: string }>({
     isOpen: false,
     activityId: null,
     activityTitle: '',
@@ -34,6 +40,25 @@ export default function FacultyActivitiesPage() {
       toast.error(error.response?.data?.error || 'Failed to delete activity');
     },
   });
+
+  const cloneMutation = useMutation({
+    mutationFn: (id: string) => activityService.cloneActivity(id),
+    onSuccess: (data: { _id: string }) => {
+      toast.success('Draft copy created!');
+      queryClient.invalidateQueries({ queryKey: ['myActivities'] });
+      setCloneModal({ isOpen: false, activityId: null, activityTitle: '' });
+      navigate(`/edit-activity/${data._id}`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to clone activity');
+    },
+  });
+
+  const handleClone = () => {
+    if (cloneModal.activityId) {
+      cloneMutation.mutate(cloneModal.activityId);
+    }
+  };
 
   const handleDelete = () => {
     if (deleteModal.activityId) {
@@ -139,6 +164,19 @@ export default function FacultyActivitiesPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Link to={`/activity/${activity._id}/analytics`}>
+                        <Button variant="outline" size="sm" leftIcon={<ChartBarIcon className="w-4 h-4" />}>
+                          Analytics
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        leftIcon={<DocumentDuplicateIcon className="w-4 h-4" />}
+                        onClick={() => setCloneModal({ isOpen: true, activityId: activity._id, activityTitle: activity.title })}
+                      >
+                        Clone
+                      </Button>
                       <Link to={`/edit-activity/${activity._id}`}>
                         <Button variant="outline" size="sm" leftIcon={<PencilSquareIcon className="w-4 h-4" />}>
                           Edit
@@ -160,6 +198,35 @@ export default function FacultyActivitiesPage() {
             ))}
           </div>
         )}
+
+        {/* Clone Confirmation Modal */}
+        <Modal
+          isOpen={cloneModal.isOpen}
+          onClose={() => setCloneModal({ isOpen: false, activityId: null, activityTitle: '' })}
+          title="Clone Activity"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-600 dark:text-gray-400">
+              Clone <strong>{cloneModal.activityTitle}</strong>? A draft copy will be created for you to edit.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setCloneModal({ isOpen: false, activityId: null, activityTitle: '' })}
+                disabled={cloneMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleClone}
+                disabled={cloneMutation.isPending}
+              >
+                {cloneMutation.isPending ? 'Cloning...' : 'Clone'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Delete Confirmation Modal */}
         <Modal

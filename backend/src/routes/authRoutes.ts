@@ -6,8 +6,14 @@ import {
   logout,
   getProfile,
   changePassword,
+  updateProfile,
+  forgotPassword,
+  resetPassword,
   registerValidation,
   loginValidation,
+  updateProfileValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -91,6 +97,8 @@ router.post('/logout', authenticate, logout);
  */
 router.get('/profile', authenticate, getProfile);
 
+router.patch('/profile', authenticate, updateProfileValidation, validate, updateProfile);
+
 /**
  * @swagger
  * /api/auth/change-password:
@@ -99,5 +107,8 @@ router.get('/profile', authenticate, getProfile);
  *     tags: [Authentication]
  */
 router.post('/change-password', authenticate, changePassword);
+
+router.post('/forgot-password', forgotPasswordValidation, validate, forgotPassword);
+router.post('/reset-password', resetPasswordValidation, validate, resetPassword);
 
 export default router;

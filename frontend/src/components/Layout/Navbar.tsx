@@ -76,18 +76,18 @@ export default function Navbar() {
     }`;
 
   const getNavLinks = () => {
-    const links: Array<{ path: string; label: string }> = [
-      { path: '/activities', label: 'Events' },
-    ];
+    const links: Array<{ path: string; label: string }> = [];
 
     if (isAuthenticated && user) {
       if (user.role === 'student') {
         links.push(
+          { path: '/activities', label: 'Events' },
           { path: '/dashboard', label: 'Dashboard' },
           { path: '/my-activities', label: 'My Activities' }
         );
       } else if (user.role === 'faculty') {
         links.push(
+          { path: '/activities', label: 'Events' },
           { path: '/faculty/dashboard', label: 'Dashboard' },
           { path: '/faculty/my-activities', label: 'My Events' },
           { path: '/create-activity', label: 'Create Event' }
@@ -100,6 +100,8 @@ export default function Navbar() {
           { path: '/create-activity', label: 'Create Event' }
         );
       }
+    } else {
+      links.push({ path: '/activities', label: 'Events' });
     }
 
     return links;

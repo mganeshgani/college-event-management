@@ -19,6 +19,7 @@ export interface Activity {
     department?: string;
   };
   status: 'draft' | 'published' | 'cancelled' | 'completed';
+  waitlistEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +56,7 @@ export interface CreateActivityData {
   category: string;
   posterImage?: string;
   status: 'draft' | 'published' | 'cancelled' | 'completed';
+  waitlistEnabled?: boolean;
 }
 
 export const activityService = {
@@ -77,7 +79,7 @@ export const activityService = {
   },
 
   // Get single activity by ID
-  getActivity: async (id: string): Promise<{ activity: Activity; isEnrolled: boolean }> => {
+  getActivity: async (id: string): Promise<{ activity: Activity; isEnrolled: boolean; enrollmentStatus: string | null; waitlistPosition: number | null }> => {
     const response = await api.get(`/activities/${id}`);
     return response.data;
   },
@@ -100,7 +102,7 @@ export const activityService = {
   },
 
   // Enroll in activity (student only)
-  enrollActivity: async (id: string): Promise<{ message: string }> => {
+  enrollActivity: async (id: string): Promise<{ message: string; status?: string; waitlistPosition?: number }> => {
     const response = await api.post(`/activities/${id}/enroll`);
     return response.data;
   },
@@ -113,7 +115,7 @@ export const activityService = {
 
   // Get participants of an activity (faculty only)
   getParticipants: async (id: string) => {
-    const response = await api.get(`/dashboard/export/${id}`);
+    const response = await api.get(`/activities/${id}/participants`);
     return response.data;
   },
 
@@ -132,6 +134,18 @@ export const activityService = {
     if (page) params.append('page', String(page));
     if (limit) params.append('limit', String(limit));
     const response = await api.get(`/activities/${id}/participants?${params.toString()}`);
+    return response.data;
+  },
+
+  // Bulk update activity status (admin only)
+  bulkUpdateStatus: async (activityIds: string[], status: string): Promise<{ modifiedCount: number }> => {
+    const response = await api.patch('/activities/bulk/status', { activityIds, status });
+    return response.data;
+  },
+
+  // Clone an activity (faculty/admin)
+  cloneActivity: async (id: string) => {
+    const response = await api.post(`/activities/${id}/clone`);
     return response.data;
   },
 };

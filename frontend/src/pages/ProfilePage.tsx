@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   EnvelopeIcon,
   AcademicCapIcon,
   BuildingOfficeIcon,
-  KeyIcon,
   ShieldCheckIcon,
   IdentificationIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Button, Input } from '../components/Common';
 import { useAuthStore } from '../store/authStore';
-import { authService } from '../services';
+import { authService, dashboardService } from '../services';
 import toast from 'react-hot-toast';
 
 const fadeUp = {
@@ -20,21 +22,66 @@ const fadeUp = {
 };
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const { user, updateUser } = useAuthStore();
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ name: '', department: '', rollNumber: '' });
+
+  // Fetch stats based on role
+  const { data: studentStats } = useQuery({
+    queryKey: ['dashboard', 'student'],
+    queryFn: dashboardService.getStudentStats,
+    enabled: user?.role === 'student',
+  });
+
+  const { data: facultyStats } = useQuery({
+    queryKey: ['dashboard', 'faculty'],
+    queryFn: dashboardService.getFacultyStats,
+    enabled: user?.role === 'faculty',
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: { name?: string; department?: string; rollNumber?: string }) => updateUser(data),
+    onSuccess: () => {
+      toast.success('Profile updated!');
+      setIsEditing(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update profile');
+    },
+  });
+
+  const startEditing = () => {
+    setEditData({
+      name: user?.name || '',
+      department: user?.department || '',
+      rollNumber: user?.rollNumber || '',
+    });
+    setIsEditing(true);
+  };
+
+  const handleProfileSave = () => {
+    const updates: Record<string, string> = {};
+    if (editData.name && editData.name !== user?.name) updates.name = editData.name;
+    if (editData.department !== (user?.department || '')) updates.department = editData.department;
+    if (user?.role === 'student' && editData.rollNumber !== (user?.rollNumber || '')) updates.rollNumber = editData.rollNumber;
+    if (Object.keys(updates).length === 0) {
+      setIsEditing(false);
+      return;
+    }
+    updateProfileMutation.mutate(updates);
+  };
 
   const changePasswordMutation = useMutation({
     mutationFn: () =>
       authService.changePassword(passwordData.currentPassword, passwordData.newPassword),
     onSuccess: () => {
       toast.success('Password changed successfully!');
-      setShowPasswordForm(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setErrors({});
     },
@@ -122,129 +169,182 @@ export default function ProfilePage() {
         {/* Account Details */}
         <motion.div variants={fadeUp} custom={2}>
           <Card className="mb-6">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
-              <IdentificationIcon className="w-5 h-5 text-primary-500" />
-              Account Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {([
-                { icon: EnvelopeIcon, label: 'Email', value: user?.email },
-                { icon: AcademicCapIcon, label: 'Role', value: user?.role, capitalize: true },
-                user?.department ? { icon: BuildingOfficeIcon, label: 'Department', value: user.department } : null,
-                user?.rollNumber ? { icon: IdentificationIcon, label: 'Roll Number', value: user.rollNumber } : null,
-              ].filter(Boolean) as { icon: React.ElementType; label: string; value?: string; capitalize?: boolean }[]).map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.label}
-                    className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-[18px] h-[18px] text-primary-600 dark:text-primary-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{item.label}</p>
-                      <p className={`text-sm font-medium text-gray-900 dark:text-white truncate ${item.capitalize ? 'capitalize' : ''}`}>
-                        {item.value}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Security */}
-        <motion.div variants={fadeUp} custom={3}>
-          <Card>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <ShieldCheckIcon className="w-5 h-5 text-primary-500" />
-                Security
+                <IdentificationIcon className="w-5 h-5 text-primary-500" />
+                Account Information
               </h3>
-              {!showPasswordForm && (
-                <Button variant="outline" size="sm" onClick={() => setShowPasswordForm(true)}>
-                  <KeyIcon className="w-4 h-4 mr-1.5 inline" />
-                  Change Password
+              {!isEditing ? (
+                <Button variant="ghost" size="sm" onClick={startEditing}>
+                  <PencilIcon className="w-4 h-4 mr-1.5 inline" />
+                  Edit
                 </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
+                  <Button variant="primary" size="sm" onClick={handleProfileSave} isLoading={updateProfileMutation.isPending}>Save</Button>
+                </div>
               )}
             </div>
 
-            {showPasswordForm ? (
-              <motion.form
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                onSubmit={handlePasswordSubmit}
-                className="space-y-4"
-              >
-                {errors.general && (
-                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                    <p className="text-sm text-red-600 dark:text-red-400">{errors.general}</p>
-                  </div>
+            {isEditing ? (
+              <div className="space-y-4">
+                <Input
+                  label="Name"
+                  value={editData.name}
+                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  minLength={2}
+                  maxLength={100}
+                />
+                <Input
+                  label="Department"
+                  value={editData.department}
+                  onChange={(e) => setEditData({ ...editData, department: e.target.value })}
+                  maxLength={100}
+                  placeholder="e.g., Computer Science"
+                />
+                {user?.role === 'student' && (
+                  <Input
+                    label="Roll Number"
+                    value={editData.rollNumber}
+                    onChange={(e) => setEditData({ ...editData, rollNumber: e.target.value })}
+                    maxLength={50}
+                    placeholder="e.g., BCA2024001"
+                  />
                 )}
-
-                <Input
-                  label="Current Password"
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  error={errors.currentPassword}
-                  required
-                />
-                <Input
-                  label="New Password"
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  error={errors.newPassword}
-                  helperText="Min 8 chars, uppercase, lowercase, number"
-                  required
-                />
-                <Input
-                  label="Confirm New Password"
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                  error={errors.confirmPassword}
-                  required
-                />
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setShowPasswordForm(false);
-                      setErrors({});
-                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    isLoading={changePasswordMutation.isPending}
-                  >
-                    Update Password
-                  </Button>
-                </div>
-              </motion.form>
+              </div>
             ) : (
-              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                    <ShieldCheckIcon className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Password protected</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Use a strong, unique password to keep your account secure.
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([
+                  { icon: EnvelopeIcon, label: 'Email', value: user?.email },
+                  { icon: AcademicCapIcon, label: 'Role', value: user?.role, capitalize: true },
+                  user?.department ? { icon: BuildingOfficeIcon, label: 'Department', value: user.department } : null,
+                  user?.rollNumber ? { icon: IdentificationIcon, label: 'Roll Number', value: user.rollNumber } : null,
+                ].filter(Boolean) as { icon: React.ElementType; label: string; value?: string; capitalize?: boolean }[]).map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-[18px] h-[18px] text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.label}</p>
+                        <p className={`text-sm font-medium text-gray-900 dark:text-white truncate ${item.capitalize ? 'capitalize' : ''}`}>
+                          {item.value}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
+          </Card>
+        </motion.div>
+
+        {/* Account Statistics */}
+        {user?.role === 'student' && studentStats && (
+          <motion.div variants={fadeUp} custom={2.5}>
+            <Card className="mb-6">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-primary-500" />
+                Account Statistics
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{studentStats.enrolledActivities || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enrolled</p>
+                </div>
+                <div className="text-center p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{studentStats.upcomingActivities || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Upcoming</p>
+                </div>
+                <div className="text-center p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{studentStats.completedActivities || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Completed</p>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {user?.role === 'faculty' && facultyStats && (
+          <motion.div variants={fadeUp} custom={2.5}>
+            <Card className="mb-6">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                <UserGroupIcon className="w-5 h-5 text-primary-500" />
+                Account Statistics
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{facultyStats.totalActivities || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Events Created</p>
+                </div>
+                <div className="text-center p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{facultyStats.totalParticipants || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Participants</p>
+                </div>
+                <div className="text-center p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{facultyStats.publishedActivities || 0}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Published</p>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Change Password */}
+        <motion.div variants={fadeUp} custom={3}>
+          <Card>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+              <ShieldCheckIcon className="w-5 h-5 text-primary-500" />
+              Change Password
+            </h3>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              {errors.general && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                  <p className="text-sm text-red-600 dark:text-red-400">{errors.general}</p>
+                </div>
+              )}
+
+              <Input
+                label="Current Password"
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                error={errors.currentPassword}
+                required
+              />
+              <Input
+                label="New Password"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                error={errors.newPassword}
+                helperText="Min 8 chars, uppercase, lowercase, number"
+                required
+              />
+              <Input
+                label="Confirm New Password"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                error={errors.confirmPassword}
+                required
+              />
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isLoading={changePasswordMutation.isPending}
+                >
+                  Update Password
+                </Button>
+              </div>
+            </form>
           </Card>
         </motion.div>
       </motion.div>

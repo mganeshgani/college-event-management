@@ -13,6 +13,7 @@ export interface IActivityDocument extends Document {
   posterImage?: string;
   createdBy: mongoose.Types.ObjectId;
   status: 'draft' | 'published' | 'cancelled' | 'completed';
+  waitlistEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -105,6 +106,10 @@ const activitySchema = new Schema<IActivityDocument>(
       type: String,
       enum: ['draft', 'published', 'cancelled', 'completed'],
       default: 'draft',
+    },
+    waitlistEnabled: {
+      type: Boolean,
+      default: false,
     },
   },
   {

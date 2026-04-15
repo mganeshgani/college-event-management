@@ -10,6 +10,8 @@ export interface IUserDocument extends Document {
   department?: string;
   rollNumber?: string;
   refreshTokens: string[];
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -61,6 +63,14 @@ const userSchema = new Schema<IUserDocument>(
         type: String,
       },
     ],
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -102,6 +112,8 @@ userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
   delete user.refreshTokens;
+  delete user.passwordResetToken;
+  delete user.passwordResetExpires;
   delete user.__v;
   return user;
 };

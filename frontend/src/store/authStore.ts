@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import { authService } from '../services/authService';
 
 export interface User {
   id: string;
@@ -34,6 +35,7 @@ interface AuthState {
   logout: () => void;
   refreshAccessToken: () => Promise<string>;
   initialize: () => void;
+  updateUser: (data: { name?: string; department?: string; rollNumber?: string }) => Promise<void>;
   getRedirectPath: () => string;
 }
 
@@ -145,6 +147,11 @@ export const useAuthStore = create<AuthState>()(
 
       initialize: () => {
         set({ isInitialized: true });
+      },
+
+      updateUser: async (data) => {
+        const result = await authService.updateProfile(data);
+        set({ user: result.user });
       },
     }),
     {

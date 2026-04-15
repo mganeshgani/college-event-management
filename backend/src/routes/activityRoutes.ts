@@ -9,6 +9,8 @@ import {
   cancelEnrollment,
   getMyEnrollments,
   getActivityParticipants,
+  bulkUpdateActivityStatus,
+  cloneActivity,
   createActivityValidation,
   updateActivityValidation,
   searchValidation,
@@ -64,6 +66,14 @@ router.get('/', optionalAuth, searchValidation, validate, getActivities);
  *     tags: [Activities]
  */
 router.get('/my/enrollments', authenticate, authorize('student'), getMyEnrollments);
+
+// Bulk status update (Admin only) — must be before /:id routes
+router.patch(
+  '/bulk/status',
+  authenticate,
+  authorize('admin'),
+  bulkUpdateActivityStatus
+);
 
 /**
  * @swagger
@@ -132,6 +142,14 @@ router.post(
   authenticate,
   authorize('student'),
   cancelEnrollment
+);
+
+// Clone activity (Faculty + Admin)
+router.post(
+  '/:id/clone',
+  authenticate,
+  authorize('faculty', 'admin'),
+  cloneActivity
 );
 
 /**

@@ -7,20 +7,15 @@ import {
   UserGroupIcon,
   CheckCircleIcon,
   DocumentChartBarIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Button, Skeleton } from '../components/Common';
-import ActivityCard from '../components/Activity/ActivityCard';
-import { dashboardService, activityService } from '../services';
+import { dashboardService } from '../services';
 
 export default function FacultyDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard', 'faculty'],
     queryFn: dashboardService.getFacultyStats,
-  });
-
-  const { data: myActivities } = useQuery({
-    queryKey: ['activities', 'my'],
-    queryFn: () => activityService.getActivities({ limit: 6, myActivities: 'true' }),
   });
 
   const statCards = [
@@ -110,80 +105,68 @@ export default function FacultyDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Link to="/create-activity">
-          <Card hover className="text-center cursor-pointer">
-            <PlusCircleIcon className="w-12 h-12 mx-auto mb-3 text-primary-500" />
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-              Create New Activity
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Set up a new event for students
-            </p>
-          </Card>
-        </Link>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link to="/faculty/my-activities">
+            <Card hover className="cursor-pointer h-full">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shrink-0">
+                  <ClipboardDocumentListIcon className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-0.5">
+                    My Events
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    View and manage all your events
+                  </p>
+                </div>
+                {stats?.totalActivities != null && (
+                  <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-bold text-sm">
+                    {stats.totalActivities}
+                  </span>
+                )}
+              </div>
+            </Card>
+          </Link>
 
-        <Link to="/activities">
-          <Card hover className="text-center cursor-pointer">
-            <CalendarDaysIcon className="w-12 h-12 mx-auto mb-3 text-blue-500" />
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-              View All Activities
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Browse all campus activities
-            </p>
-          </Card>
-        </Link>
+          <Link to="/create-activity">
+            <Card hover className="cursor-pointer h-full">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shrink-0">
+                  <PlusCircleIcon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-0.5">
+                    Create New Event
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Set up a new event for students
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </Link>
 
-        <Link to="/faculty/my-activities">
-          <Card hover className="text-center cursor-pointer">
-            <DocumentChartBarIcon className="w-12 h-12 mx-auto mb-3 text-green-500" />
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-              Activity Reports
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              View enrollment analytics
-            </p>
-          </Card>
-        </Link>
-      </div>
-
-      {/* My Activities */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            My Activities
-          </h2>
-          <Link to="/faculty/my-activities" className="text-primary-600 hover:text-primary-700 font-medium">
-            Manage All →
+          <Link to="/faculty/my-activities">
+            <Card hover className="cursor-pointer h-full">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0">
+                  <DocumentChartBarIcon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-0.5">
+                    Participant Reports
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Access participants from your events page
+                  </p>
+                </div>
+              </div>
+            </Card>
           </Link>
         </div>
-
-        {myActivities?.data && myActivities.data.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myActivities.data.map((activity) => (
-              <ActivityCard key={activity._id} activity={activity} />
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <div className="text-center py-12">
-              <CalendarDaysIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No Activities Yet
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Get started by creating your first activity
-              </p>
-              <Link to="/create-activity">
-                <Button variant="primary">
-                  <PlusCircleIcon className="w-5 h-5 mr-2 inline" />
-                  Create Activity
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        )}
       </div>
     </div>
   );

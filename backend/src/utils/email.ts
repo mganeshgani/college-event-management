@@ -125,3 +125,54 @@ export const sendWaitlistNotification = async (
     html,
   });
 };
+
+/**
+ * Send password reset OTP email
+ */
+export const sendPasswordResetOTP = async (
+  email: string,
+  userName: string,
+  otp: string
+): Promise<boolean> => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .otp-box { background: white; padding: 20px; text-align: center; border: 2px dashed #667eea; border-radius: 10px; margin: 20px 0; }
+          .otp-code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #667eea; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Password Reset</h1>
+          </div>
+          <div class="content">
+            <p>Hi <strong>${userName}</strong>,</p>
+            <p>We received a request to reset your password. Use the OTP below to proceed:</p>
+            <div class="otp-box">
+              <p class="otp-code">${otp}</p>
+              <p style="color: #666; font-size: 14px; margin-top: 10px;">This code expires in 15 minutes</p>
+            </div>
+            <p>If you didn't request a password reset, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>© 2026 Event Management System. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Password Reset OTP - Event Management',
+    html,
+  });
+};

@@ -65,4 +65,22 @@ export const authService = {
     });
     return response.data;
   },
+
+  // Update profile
+  updateProfile: async (data: { name?: string; department?: string; rollNumber?: string }) => {
+    const response = await api.patch('/auth/profile', data);
+    return response.data;
+  },
+
+  // Forgot password — request OTP
+  forgotPassword: async (email: string) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  // Reset password — verify OTP and set new password
+  resetPassword: async (email: string, otp: string, newPassword: string) => {
+    const response = await api.post('/auth/reset-password', { email, otp, newPassword });
+    return response.data;
+  },
 };

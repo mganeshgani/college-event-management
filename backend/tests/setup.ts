@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 
+// Disable rate limiting in tests
+process.env.RATE_LIMIT_ENROLL_MAX = '10000';
+process.env.RATE_LIMIT_MAX_REQUESTS = '10000';
+
 let mongoServer: MongoMemoryReplSet;
 
 // Setup before all tests

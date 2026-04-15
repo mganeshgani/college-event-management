@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -23,24 +23,62 @@ export default function ActivityDetailPage() {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollError, setEnrollError] = useState('');
   const [enrollSuccess, setEnrollSuccess] = useState(false);
+  const [enrollResult, setEnrollResult] = useState<{ status?: string; waitlistPosition?: number } | null>(null);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, dataUpdatedAt } = useQuery({
     queryKey: ['activity', id],
     queryFn: () => activityService.getActivity(id!),
     enabled: !!id,
+    refetchInterval: (query) => {
+      const status = query.state.data?.activity?.status;
+      return status === 'completed' || status === 'cancelled' ? false : 30000;
+    },
   });
 
   const activity = data?.activity;
   const isEnrolled = data?.isEnrolled || false;
+  const enrollmentStatus = data?.enrollmentStatus || null;
+  const waitlistPosition = data?.waitlistPosition || null;
+
+  // Track slot changes for pulse animation
+  const prevSlotsRef = useRef<number | null>(null);
+  const [slotPulse, setSlotPulse] = useState(false);
+
+  useEffect(() => {
+    if (activity && prevSlotsRef.current !== null && prevSlotsRef.current !== activity.availableSlots) {
+      setSlotPulse(true);
+      const timer = setTimeout(() => setSlotPulse(false), 600);
+      return () => clearTimeout(timer);
+    }
+    if (activity) prevSlotsRef.current = activity.availableSlots;
+  }, [activity?.availableSlots]);
+
+  // "Last updated" timer
+  const [lastUpdatedText, setLastUpdatedText] = useState('just now');
+  useEffect(() => {
+    if (!dataUpdatedAt) return;
+    const update = () => {
+      const seconds = Math.floor((Date.now() - dataUpdatedAt) / 1000);
+      if (seconds < 5) setLastUpdatedText('just now');
+      else if (seconds < 60) setLastUpdatedText(`${seconds}s ago`);
+      else setLastUpdatedText(`${Math.floor(seconds / 60)}m ago`);
+    };
+    update();
+    const interval = setInterval(update, 5000);
+    return () => clearInterval(interval);
+  }, [dataUpdatedAt]);
 
   const enrollMutation = useMutation({
     mutationFn: () => activityService.enrollActivity(id!),
-    onSuccess: () => {
+    onSuccess: (result) => {
       setEnrollSuccess(true);
+      setEnrollResult(result);
       setShowEnrollModal(false);
       queryClient.invalidateQueries({ queryKey: ['activity', id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'student'] });
       queryClient.invalidateQueries({ queryKey: ['myActivities'] });
+      queryClient.invalidateQueries({ queryKey: ['myEnrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['studentStats'] });
     },
     onError: (error) => {
       setEnrollError(handleApiError(error));
@@ -94,6 +132,11 @@ export default function ActivityDetailPage() {
                     activity.status === 'published' && 
                     activity.availableSlots > 0 && 
                     !isEnrolled;
+  const canJoinWaitlist = user?.role === 'student' &&
+                          activity.status === 'published' &&
+                          activity.availableSlots === 0 &&
+                          activity.waitlistEnabled &&
+                          !isEnrolled;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -111,11 +154,23 @@ export default function ActivityDetailPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center"
+          className={`mb-6 p-4 rounded-lg flex items-center ${
+            enrollResult?.status === 'waitlisted'
+              ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+              : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+          }`}
         >
-          <CheckCircleIcon className="w-6 h-6 text-green-500 mr-3" />
-          <p className="text-green-700 dark:text-green-400">
-            Successfully enrolled! Check your dashboard to view your activities.
+          <CheckCircleIcon className={`w-6 h-6 mr-3 ${
+            enrollResult?.status === 'waitlisted' ? 'text-yellow-500' : 'text-green-500'
+          }`} />
+          <p className={
+            enrollResult?.status === 'waitlisted'
+              ? 'text-yellow-700 dark:text-yellow-400'
+              : 'text-green-700 dark:text-green-400'
+          }>
+            {enrollResult?.status === 'waitlisted'
+              ? `You're on the waitlist! Position #${enrollResult.waitlistPosition}. We'll notify you when a spot opens.`
+              : 'Successfully enrolled! Check your dashboard to view your activities.'}
           </p>
         </motion.div>
       )}
@@ -205,9 +260,14 @@ export default function ActivityDetailPage() {
                 <UserGroupIcon className="w-5 h-5 text-primary-500 mr-3 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Capacity</p>
-                  <p className="font-medium">
+                  <motion.p
+                    className="font-medium"
+                    animate={slotPulse ? { scale: [1, 1.15, 1] } : {}}
+                    transition={{ duration: 0.4 }}
+                  >
                     {activity.availableSlots} / {activity.capacity} spots available
-                  </p>
+                  </motion.p>
+                  <p className="text-xs text-gray-400 mt-0.5">Updated {lastUpdatedText}</p>
                 </div>
               </div>
             </div>
@@ -233,7 +293,14 @@ export default function ActivityDetailPage() {
             </div>
 
             {/* Enroll Button */}
-            {isEnrolled ? (
+            {isEnrolled && enrollmentStatus === 'waitlisted' ? (
+              <div className="mt-6 p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                  <ClockIcon className="w-5 h-5 mr-2" />
+                  <span className="font-medium">You're on the waitlist (Position #{waitlistPosition})</span>
+                </div>
+              </div>
+            ) : isEnrolled ? (
               <div className="mt-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                 <div className="flex items-center justify-center text-green-600 dark:text-green-400">
                   <CheckCircleIcon className="w-5 h-5 mr-2" />
@@ -248,6 +315,15 @@ export default function ActivityDetailPage() {
                 onClick={() => setShowEnrollModal(true)}
               >
                 Enroll Now
+              </Button>
+            ) : canJoinWaitlist ? (
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full mt-6"
+                onClick={() => setShowEnrollModal(true)}
+              >
+                Join Waitlist
               </Button>
             ) : !user ? (
               <Link to="/login">

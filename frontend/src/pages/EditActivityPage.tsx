@@ -31,6 +31,7 @@ export default function EditActivityPage() {
     category: 'Academic',
     posterImage: '',
     status: 'draft',
+    waitlistEnabled: false,
   });
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function EditActivityPage() {
         category: activity.category,
         posterImage: activity.posterImage || '',
         status: activity.status,
+        waitlistEnabled: activity.waitlistEnabled || false,
       });
     }
   }, [activity]);
@@ -235,6 +237,31 @@ export default function EditActivityPage() {
                 { value: 'completed', label: 'Completed' },
               ]}
             />
+
+            {/* Waitlist Toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={formData.waitlistEnabled}
+                onClick={() => setFormData(prev => ({ ...prev, waitlistEnabled: !prev.waitlistEnabled }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  formData.waitlistEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    formData.waitlistEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <div>
+                <label className="text-sm font-medium">Enable Waitlist</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  When full, students can join a waitlist and get auto-promoted when a spot opens
+                </p>
+              </div>
+            </div>
 
             <div className="flex gap-4 pt-4">
               <Button

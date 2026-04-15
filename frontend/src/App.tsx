@@ -20,6 +20,8 @@ import EditActivityPage from './pages/EditActivityPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ActivityAnalyticsPage from './pages/ActivityAnalyticsPage';
 
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -77,6 +79,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="activities" element={<ActivitiesPage />} />
           <Route path="activities/:id" element={<ActivityDetailPage />} />
           <Route path="unauthorized" element={<UnauthorizedPage />} />
@@ -139,6 +142,14 @@ function App() {
             element={
               <ProtectedRoute roles={['faculty', 'admin']}>
                 <EditActivityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="activity/:id/analytics"
+            element={
+              <ProtectedRoute roles={['faculty', 'admin']}>
+                <ActivityAnalyticsPage />
               </ProtectedRoute>
             }
           />

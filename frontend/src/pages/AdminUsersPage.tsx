@@ -1,20 +1,31 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlassIcon,
   XMarkIcon,
   EnvelopeIcon,
   BuildingLibraryIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Button, Skeleton } from '../components/Common';
 import { dashboardService } from '../services';
+import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
 
 export default function AdminUsersPage() {
+  const currentUser = useAuthStore((s) => s.user);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [roleConfirm, setRoleConfirm] = useState<{
+    userId: string;
+    userName: string;
+    fromRole: string;
+    toRole: string;
+  } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', { page, search, role: roleFilter }],
@@ -26,6 +37,30 @@ export default function AdminUsersPage() {
         role: roleFilter || undefined,
       }),
   });
+
+  const roleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: 'student' | 'faculty' | 'admin' }) =>
+      dashboardService.updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success('Role updated');
+      setRoleConfirm(null);
+    },
+    onError: () => {
+      toast.error('Failed to update role');
+      setRoleConfirm(null);
+    },
+  });
+
+  const handleRoleChange = (userId: string, userName: string, currentRole: string, newRole: string) => {
+    if (newRole === currentRole) return;
+    setRoleConfirm({ userId, userName, fromRole: currentRole, toRole: newRole });
+  };
+
+  const confirmRoleChange = () => {
+    if (!roleConfirm) return;
+    roleMutation.mutate({ userId: roleConfirm.userId, role: roleConfirm.toRole as 'student' | 'faculty' | 'admin' });
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,9 +207,21 @@ export default function AdminUsersPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${roleColors[user.role] || roleColors.student}`}>
-                            {user.role}
-                          </span>
+                          {user._id === currentUser?.id ? (
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${roleColors[user.role] || roleColors.student}`}>
+                              {user.role} (you)
+                            </span>
+                          ) : (
+                            <select
+                              value={user.role}
+                              onChange={(e) => handleRoleChange(user._id, user.name, user.role, e.target.value)}
+                              className={`px-2 py-1 rounded-lg text-xs font-medium capitalize border-0 cursor-pointer focus:ring-2 focus:ring-primary-500 ${roleColors[user.role] || roleColors.student}`}
+                            >
+                              <option value="student">Student</option>
+                              <option value="faculty">Faculty</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          )}
                         </td>
                         <td className="px-5 py-4">
                           <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -217,6 +264,61 @@ export default function AdminUsersPage() {
           </>
         )}
       </div>
+
+      {/* Role Change Confirmation Modal */}
+      <AnimatePresence>
+        {roleConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setRoleConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Change User Role
+                </h3>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Change <span className="font-medium text-gray-900 dark:text-white">{roleConfirm.userName}</span>'s
+                role from{' '}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${roleColors[roleConfirm.fromRole]}`}>
+                  {roleConfirm.fromRole}
+                </span>{' '}
+                to{' '}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${roleColors[roleConfirm.toRole]}`}>
+                  {roleConfirm.toRole}
+                </span>
+                ? This will force the user to log in again.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setRoleConfirm(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={confirmRoleChange}
+                  disabled={roleMutation.isPending}
+                >
+                  {roleMutation.isPending ? 'Updating...' : 'Confirm'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

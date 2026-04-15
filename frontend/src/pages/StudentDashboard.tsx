@@ -6,20 +6,16 @@ import {
   CalendarDaysIcon,
   CheckCircleIcon,
   SparklesIcon,
+  ArrowRightIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Skeleton } from '../components/Common';
-import ActivityCard from '../components/Activity/ActivityCard';
-import { dashboardService, activityService } from '../services';
+import { dashboardService } from '../services';
 
 export default function StudentDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard', 'student'],
     queryFn: dashboardService.getStudentStats,
-  });
-
-  const { data: activities } = useQuery({
-    queryKey: ['activities', 'upcoming'],
-    queryFn: () => activityService.getActivities({ status: 'published', limit: 3 }),
   });
 
   const { data: myActivities } = useQuery({
@@ -155,30 +151,84 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* Upcoming Activities */}
+      {/* Next Upcoming Event */}
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Discover New Activities
-          </h2>
-          <Link to="/activities" className="text-primary-600 hover:text-primary-700 font-medium">
-            View All →
-          </Link>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          Next Upcoming Event
+        </h2>
+        {(() => {
+          const upcomingEnrollments = myActivities
+            ?.filter(
+              (item) =>
+                item.status === 'enrolled' &&
+                new Date(item.activityId.startDate) > new Date()
+            )
+            .sort(
+              (a, b) =>
+                new Date(a.activityId.startDate).getTime() -
+                new Date(b.activityId.startDate).getTime()
+            );
 
-        {activities?.data && activities.data.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.data.map((activity) => (
-              <ActivityCard key={activity._id} activity={activity} />
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-              No upcoming activities available
-            </p>
-          </Card>
-        )}
+          const next = upcomingEnrollments?.[0];
+
+          if (!next) {
+            return (
+              <Card>
+                <div className="text-center py-8">
+                  <ClockIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-600 dark:text-gray-400 mb-3">
+                    No upcoming events scheduled
+                  </p>
+                  <Link to="/activities">
+                    <span className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-medium">
+                      Browse Events <ArrowRightIcon className="w-4 h-4" />
+                    </span>
+                  </Link>
+                </div>
+              </Card>
+            );
+          }
+
+          const daysUntil = Math.ceil(
+            (new Date(next.activityId.startDate).getTime() - Date.now()) /
+              (1000 * 60 * 60 * 24)
+          );
+
+          return (
+            <Card hover>
+              <Link to={`/activities/${next.activityId._id}`}>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shrink-0">
+                    <span className="text-white font-bold text-lg">{daysUntil}d</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                      {next.activityId.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {new Date(next.activityId.startDate).toLocaleDateString('en-IN', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                      {' · '}
+                      📍 {next.activityId.location}
+                    </p>
+                    <p className="text-sm text-primary-600 dark:text-primary-400 mt-1 font-medium">
+                      {daysUntil === 0
+                        ? 'Happening today!'
+                        : daysUntil === 1
+                        ? 'Tomorrow'
+                        : `In ${daysUntil} days`}
+                    </p>
+                  </div>
+                  <ArrowRightIcon className="w-5 h-5 text-gray-400 shrink-0" />
+                </div>
+              </Link>
+            </Card>
+          );
+        })()}
       </div>
     </div>
   );

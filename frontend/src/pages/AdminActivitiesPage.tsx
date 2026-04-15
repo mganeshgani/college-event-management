@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   PencilSquareIcon,
@@ -10,6 +10,8 @@ import {
   EyeIcon,
   UserGroupIcon,
   XMarkIcon,
+  ChartBarIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Button, Skeleton, Modal } from '../components/Common';
 import ParticipantsList from '../components/Activity/ParticipantsList';
@@ -36,6 +38,9 @@ export default function AdminActivitiesPage() {
     activityId: null,
     activityTitle: '',
   });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState('published');
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'activities', { page, search, status: statusFilter, category: categoryFilter, department: departmentFilter, faculty: facultyFilter }],
@@ -63,6 +68,39 @@ export default function AdminActivitiesPage() {
       toast.error(error.response?.data?.error || 'Failed to delete activity');
     },
   });
+
+  const bulkMutation = useMutation({
+    mutationFn: ({ activityIds, status }: { activityIds: string[]; status: string }) =>
+      activityService.bulkUpdateStatus(activityIds, status),
+    onSuccess: (data: { modifiedCount: number }) => {
+      toast.success(`${data.modifiedCount} activities updated`);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'admin'] });
+      setSelectedIds(new Set());
+      setShowBulkConfirm(false);
+    },
+    onError: () => {
+      toast.error('Failed to update activities');
+      setShowBulkConfirm(false);
+    },
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === activities.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(activities.map((a: { _id: string }) => a._id)));
+    }
+  };
 
   const handleDelete = () => {
     if (deleteModal.activityId) {
@@ -252,6 +290,14 @@ export default function AdminActivitiesPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
+                      <th className="px-3 py-3 w-10">
+                        <input
+                          type="checkbox"
+                          checked={activities.length > 0 && selectedIds.size === activities.length}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                        />
+                      </th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Activity</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Faculty</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Category</th>
@@ -263,7 +309,15 @@ export default function AdminActivitiesPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {activities.map((activity: any) => (
-                      <tr key={activity._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <tr key={activity._id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedIds.has(activity._id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''}`}>
+                        <td className="px-3 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(activity._id)}
+                            onChange={() => toggleSelect(activity._id)}
+                            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                          />
+                        </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             {activity.posterImage ? (
@@ -326,6 +380,11 @@ export default function AdminActivitiesPage() {
                             >
                               <UserGroupIcon className="w-4 h-4" />
                             </button>
+                            <Link to={`/activity/${activity._id}/analytics`}>
+                              <button className="p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors" title="Analytics">
+                                <ChartBarIcon className="w-4 h-4" />
+                              </button>
+                            </Link>
                             <Link to={`/edit-activity/${activity._id}`}>
                               <button className="p-2 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors" title="Edit">
                                 <PencilSquareIcon className="w-4 h-4" />
@@ -375,6 +434,70 @@ export default function AdminActivitiesPage() {
             )}
           </>
         )}
+
+        {/* Bulk Action Bar */}
+        <AnimatePresence>
+          {selectedIds.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center gap-4"
+            >
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {selectedIds.size} selected
+              </span>
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="published">Published</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="completed">Completed</option>
+              </select>
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<CheckIcon className="w-4 h-4" />}
+                onClick={() => setShowBulkConfirm(true)}
+              >
+                Apply
+              </Button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Clear
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bulk Confirm Modal */}
+        <Modal
+          isOpen={showBulkConfirm}
+          onClose={() => setShowBulkConfirm(false)}
+          title="Bulk Status Update"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-600 dark:text-gray-400">
+              Set <strong>{selectedIds.size}</strong> activities to <strong className="capitalize">{bulkStatus}</strong>?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setShowBulkConfirm(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => bulkMutation.mutate({ activityIds: Array.from(selectedIds), status: bulkStatus })}
+                disabled={bulkMutation.isPending}
+              >
+                {bulkMutation.isPending ? 'Updating...' : 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Participants Modal */}
         <Modal

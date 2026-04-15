@@ -7,6 +7,7 @@ import {
   getActivityAnalytics,
   getAllUsers,
   getAllActivitiesAdmin,
+  updateUserRole,
 } from '../controllers/dashboardController';
 import { authenticate, authorize } from '../middleware/auth';
 
@@ -103,6 +104,13 @@ router.get(
   authenticate,
   authorize('admin'),
   getAllActivitiesAdmin
+);
+
+router.patch(
+  '/admin/users/:id/role',
+  authenticate,
+  authorize('admin'),
+  updateUserRole
 );
 
 export default router;

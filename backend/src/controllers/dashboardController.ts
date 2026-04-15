@@ -509,3 +509,42 @@ export const getAllActivitiesAdmin = async (
     res.status(500).json({ error: 'Failed to fetch activities' });
   }
 };
+
+/**
+ * Admin: Update user role
+ */
+export const updateUserRole = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const adminId = req.user!.userId;
+
+    if (!['student', 'faculty', 'admin'].includes(role)) {
+      res.status(400).json({ error: 'Invalid role. Must be student, faculty, or admin.' });
+      return;
+    }
+
+    if (id === adminId) {
+      res.status(400).json({ error: 'Cannot change your own role' });
+      return;
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    user.role = role;
+    user.refreshTokens = []; // Force re-login
+    await user.save();
+
+    res.json({ message: `Role updated to ${role}`, user });
+  } catch (error) {
+    logger.error('Update user role error:', error);
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+};
