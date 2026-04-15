@@ -94,8 +94,9 @@ export default function Navbar() {
         );
       } else if (user.role === 'admin') {
         links.push(
-          { path: '/admin/dashboard', label: 'Admin Panel' },
-          { path: '/faculty/dashboard', label: 'Manage Events' },
+          { path: '/admin/dashboard', label: 'Dashboard' },
+          { path: '/admin/activities', label: 'Activities' },
+          { path: '/admin/users', label: 'Users' },
           { path: '/create-activity', label: 'Create Event' }
         );
       }

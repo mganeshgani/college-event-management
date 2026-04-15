@@ -76,4 +76,28 @@ export const dashboardService = {
     const response = await api.get('/activities/my/enrollments');
     return response.data.enrollments || [];
   },
+
+  // Admin: Get all users with filters
+  getAdminUsers: async (filters?: { role?: string; search?: string; page?: number; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.append(key, String(value));
+      });
+    }
+    const response = await api.get(`/dashboard/admin/users?${params.toString()}`);
+    return response.data;
+  },
+
+  // Admin: Get all activities across all faculty
+  getAdminActivities: async (filters?: { status?: string; category?: string; department?: string; faculty?: string; search?: string; page?: number; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.append(key, String(value));
+      });
+    }
+    const response = await api.get(`/dashboard/admin/activities?${params.toString()}`);
+    return response.data;
+  },
 };

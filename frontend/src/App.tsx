@@ -11,6 +11,8 @@ import ActivityDetailPage from './pages/ActivityDetailPage';
 import StudentDashboard from './pages/StudentDashboard';
 import FacultyDashboard from './pages/FacultyDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminActivitiesPage from './pages/AdminActivitiesPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import MyActivitiesPage from './pages/MyActivitiesPage';
 import FacultyActivitiesPage from './pages/FacultyActivitiesPage';
 import CreateActivityPage from './pages/CreateActivityPage';
@@ -147,6 +149,22 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/activities"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminActivitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/users"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminUsersPage />
               </ProtectedRoute>
             }
           />

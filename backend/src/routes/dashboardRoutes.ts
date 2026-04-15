@@ -5,6 +5,8 @@ import {
   getAdminDashboard,
   exportParticipants,
   getActivityAnalytics,
+  getAllUsers,
+  getAllActivitiesAdmin,
 } from '../controllers/dashboardController';
 import { authenticate, authorize } from '../middleware/auth';
 
@@ -73,6 +75,34 @@ router.get(
   authenticate,
   authorize('faculty', 'admin'),
   getActivityAnalytics
+);
+
+/**
+ * @swagger
+ * /api/dashboard/admin/users:
+ *   get:
+ *     summary: Get all users (Admin only)
+ *     tags: [Admin]
+ */
+router.get(
+  '/admin/users',
+  authenticate,
+  authorize('admin'),
+  getAllUsers
+);
+
+/**
+ * @swagger
+ * /api/dashboard/admin/activities:
+ *   get:
+ *     summary: Get all activities across faculty (Admin only)
+ *     tags: [Admin]
+ */
+router.get(
+  '/admin/activities',
+  authenticate,
+  authorize('admin'),
+  getAllActivitiesAdmin
 );
 
 export default router;

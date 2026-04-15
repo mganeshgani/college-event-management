@@ -392,3 +392,120 @@ export const getActivityAnalytics = async (
     res.status(500).json({ error: 'Failed to load analytics' });
   }
 };
+
+/**
+ * Admin: Get all users with filters and pagination
+ */
+export const getAllUsers = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { role, search, page = 1, limit = 20 } = req.query;
+
+    const query: any = {};
+    if (role && ['student', 'faculty', 'admin'].includes(role as string)) {
+      query.role = role;
+    }
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select('-password -refreshTokens')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    res.json({
+      users,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error) {
+    logger.error('Get all users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+};
+
+/**
+ * Admin: Get all activities across all faculty with filters
+ */
+export const getAllActivitiesAdmin = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { status, category, department, search, faculty, page = 1, limit = 20 } = req.query;
+
+    const query: any = {};
+    if (status) query.status = status;
+    if (category) query.category = category;
+    if (department) query.department = department;
+    if (faculty) query.createdBy = faculty;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [activities, total] = await Promise.all([
+      Activity.find(query)
+        .populate('createdBy', 'name email department')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Activity.countDocuments(query),
+    ]);
+
+    // Get enrollment counts for each activity
+    const activityIds = activities.map((a: any) => a._id);
+    const enrollmentCounts = await Participation.aggregate([
+      { $match: { activityId: { $in: activityIds }, status: 'enrolled' } },
+      { $group: { _id: '$activityId', count: { $sum: 1 } } },
+    ]);
+    const enrollMap = new Map(enrollmentCounts.map((e: any) => [e._id.toString(), e.count]));
+
+    const enrichedActivities = activities.map((a: any) => ({
+      ...a,
+      enrolledCount: enrollMap.get(a._id.toString()) || 0,
+    }));
+
+    // Get unique faculty list for filter dropdown
+    const facultyList = await User.find({ role: 'faculty' })
+      .select('name email department')
+      .sort({ name: 1 })
+      .lean();
+
+    res.json({
+      activities: enrichedActivities,
+      facultyList,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error) {
+    logger.error('Admin get all activities error:', error);
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+};
