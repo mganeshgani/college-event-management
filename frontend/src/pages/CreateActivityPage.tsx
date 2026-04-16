@@ -7,6 +7,7 @@ import { activityService } from '../services/activityService';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
+import ImageUpload from '../components/Common/ImageUpload';
 import Select from '../components/UI/Select';
 import TextArea from '../components/UI/TextArea';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -281,18 +282,12 @@ const CreateActivityPage = () => {
                 </div>
               </div>
 
-              {/* Poster Image URL */}
+              {/* Poster Image Upload */}
               <div>
-                <label htmlFor="posterImage" className="block text-sm font-medium mb-2">
-                  Poster Image URL (optional)
-                </label>
-                <Input
-                  type="url"
-                  id="posterImage"
-                  name="posterImage"
+                <ImageUpload
+                  label="Poster Image"
                   value={formData.posterImage}
-                  onChange={handleChange}
-                  placeholder="https://example.com/poster.jpg"
+                  onChange={(url) => setFormData((prev) => ({ ...prev, posterImage: url }))}
                 />
               </div>
 

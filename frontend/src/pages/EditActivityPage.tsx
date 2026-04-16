@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Card, Button, Input } from '../components/Common';
+import ImageUpload from '../components/Common/ImageUpload';
 import TextArea from '../components/UI/TextArea';
 import Select from '../components/UI/Select';
 import { activityService } from '../services';
@@ -215,13 +216,10 @@ export default function EditActivityPage() {
               />
             </div>
 
-            <Input
-              label="Poster Image URL (Optional)"
-              name="posterImage"
-              type="url"
-              value={formData.posterImage}
-              onChange={handleChange}
-              placeholder="https://example.com/poster.jpg"
+            <ImageUpload
+              label="Poster Image"
+              value={formData.posterImage || ''}
+              onChange={(url) => setFormData((prev) => ({ ...prev, posterImage: url }))}
             />
 
             <Select
